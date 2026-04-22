@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Vulcan Project</title>
+    <style>
+        body { background: #000; color: #fff; text-align: center; font-family: sans-serif; }
+        #container { position: relative; display: inline-block; }
+        #overlay {
+            display: none; position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); font-size: 40px;
+            color: #00ffcc; font-weight: bold; text-shadow: 2px 2px 4px #000;
+        }
+        img { width: 320px; border: 2px solid #333; }
+    </style>
+</head>
+<body>
+    <h1>Vulcan Detector</h1>
+    <div id="container">
+        <img id="feed" src="{{ url_for('video_feed') }}">
+        <div id="overlay">Live long and prosper</div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script src="{{ url_for('static', filename='JavaScript.js') }}"></script>
+</body>
+</html>
