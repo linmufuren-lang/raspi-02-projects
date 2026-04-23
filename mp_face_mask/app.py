@@ -10,7 +10,7 @@ from picamera2 import Picamera2
 app = Flask(__name__)
 
 GIF_DIR = os.path.join(os.path.dirname(__file__), 'templates')
-GIF_NAMES = ['laughing_man', 'piyopiyo', 'totoro']
+GIF_NAMES = ['laughing_man', 'laughing_cat', 'piyopiyo', 'totoro']
 STYLES = ['surgical', 'circle', 'oval'] + GIF_NAMES
 
 
