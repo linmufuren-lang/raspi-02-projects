@@ -19,13 +19,54 @@
             text-shadow: 3px 3px 5px black;
             white-space: nowrap;
         }
+        #status-bar {
+            margin: 10px auto;
+            font-size: 20px;
+            color: #aaa;
+        }
+        #detect-flash {
+            display: none;
+            margin: 0 auto 10px;
+            padding: 10px 30px;
+            background: #00ffcc;
+            color: #000;
+            font-size: 28px;
+            font-weight: bold;
+            border-radius: 8px;
+            width: fit-content;
+        }
+        #start-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+        #start-btn {
+            font-size: 32px;
+            padding: 20px 50px;
+            background: #00ffcc;
+            color: #000;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
     <h1>Vulcan Salute Detector</h1>
+    <div id="detect-flash">🖖 Vulcan Detected!</div>
+    <div id="status-bar">検出回数: <span id="count">0</span></div>
     <div id="container">
         <img id="video_feed" src="{{ url_for('video_feed') }}">
         <div id="message-overlay">Live long and prosper</div>
+    </div>
+
+    <div id="start-overlay">
+        <button id="start-btn">▶ スタート</button>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>

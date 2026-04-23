@@ -29,8 +29,8 @@ try:
         # フレーム取得
         frame = picam2.capture_array()
         
-        # RGB 変換
-        image_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        # Picamera2 は RGB888 で取得するので変換不要
+        image_rgb = frame
         image_rgb.flags.writeable = False
         
         # 姿勢認識
