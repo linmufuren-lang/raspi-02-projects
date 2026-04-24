@@ -1,0 +1,13 @@
+[Unit]
+Description=Pi Portal Launcher
+After=network.target
+
+[Service]
+User=rasaicam
+WorkingDirectory=/home/rasaicam/projects/portal
+ExecStart=/home/rasaicam/projects/portal/env/bin/python app.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

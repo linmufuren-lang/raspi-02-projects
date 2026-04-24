@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pi Camera Portal</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      background: #1a1a2e;
+      color: #eee;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #16213e;
+      border-bottom: 3px solid #e94560;
+      padding: 18px 36px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    header h1  { font-size: 1.5rem; color: #e94560; letter-spacing: 1px; }
+    header .sub { font-size: 0.85rem; color: #95a5a6; margin-top: 4px; }
+
+    .notice {
+      background: #1c3a55;
+      border-left: 4px solid #f39c12;
+      padding: 10px 36px;
+      font-size: 0.85rem;
+      color: #f39c12;
+      display: none;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+      gap: 20px;
+      padding: 28px 36px;
+    }
+
+    .card {
+      background: #16213e;
+      border: 2px solid #0f3460;
+      border-radius: 14px;
+      padding: 22px;
+      transition: border-color 0.25s, box-shadow 0.25s, transform 0.2s;
+    }
+    .card:hover         { transform: translateY(-3px); }
+    .card.running       {
+      border-color: #27ae60;
+      box-shadow: 0 0 16px rgba(39, 174, 96, 0.25);
+    }
+
+    .card-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .icon { font-size: 2.4rem; line-height: 1; }
+
+    .status-dot {
+      width: 11px; height: 11px;
+      border-radius: 50%;
+      background: #444;
+      margin-top: 4px;
+      transition: background 0.3s;
+      flex-shrink: 0;
+    }
+    .status-dot.running {
+      background: #27ae60;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.35; }
+    }
+
+    .card-name { font-size: 1rem; font-weight: 700; margin-bottom: 4px; }
+    .card-desc { font-size: 0.8rem; color: #95a5a6; margin-bottom: 16px; min-height: 1.2em; }
+
+    .actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+    button, .btn-open {
+      border: none; border-radius: 8px;
+      padding: 7px 13px;
+      font-size: 0.82rem; font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+      text-decoration: none;
+      display: inline-block;
+    }
+    button:active, .btn-open:active { transform: scale(0.95); }
+    button:disabled { opacity: 0.28; cursor: not-allowed; pointer-events: none; }
+
+    .btn-start { background: #27ae60; color: #fff; }
+    .btn-stop  { background: #c0392b; color: #fff; }
+    .btn-open  { background: #2980b9; color: #fff; }
+    .btn-open.hidden { display: none; }
+
+    .status-label {
+      font-size: 0.75rem;
+      color: #555;
+      margin-top: 10px;
+    }
+    .status-label.running { color: #27ae60; }
+
+    footer {
+      text-align: center;
+      padding: 24px;
+      font-size: 0.8rem;
+      color: #444;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>🍓 Pi Camera Portal</h1>
+    <div class="sub">raspi-02 &nbsp;·&nbsp; 192.168.0.19 &nbsp;·&nbsp; port 8080</div>
+  </div>
+  <div id="poll-indicator" style="font-size:0.75rem; color:#444;">●</div>
+</header>
+
+<div class="notice" id="conflict-notice">
+  ⚠️ プロジェクトが起動中です。別のプログラムを起動するには先に停止してください（ポート 5000 が競合します）。
+</div>
+
+<div class="grid" id="grid">
+  {% for p in projects %}
+  <div class="card" id="card-{{ p.key }}" data-key="{{ p.key }}">
+    <div class="card-top">
+      <div class="icon">{{ p.icon }}</div>
+      <div class="status-dot" id="dot-{{ p.key }}"></div>
+    </div>
+    <div class="card-name">{{ p.name }}</div>
+    <div class="card-desc">{{ p.desc }}</div>
+    <div class="actions">
+      <button class="btn-start" onclick="startProject('{{ p.key }}')">▶ 起動</button>
+      <button class="btn-stop"  onclick="stopProject('{{ p.key }}')" disabled>■ 停止</button>
+      <a class="btn-open hidden" id="open-{{ p.key }}"
+         href="http://192.168.0.19:5000" target="_blank">🔗 開く</a>
+    </div>
+    <div class="status-label" id="label-{{ p.key }}">停止中</div>
+  </div>
+  {% endfor %}
+</div>
+
+<footer>新プロジェクトは env/ と app.py（or main.py / stream.py）を置くだけで自動表示されます。</footer>
+
+<script>
+  const PI_APP_URL = "http://192.168.0.19:5000";
+
+  // --- UI helpers ---
+
+  function setCardState(key, running) {
+    const card    = document.getElementById(`card-${key}`);
+    const dot     = document.getElementById(`dot-${key}`);
+    const label   = document.getElementById(`label-${key}`);
+    const openBtn = document.getElementById(`open-${key}`);
+    const btnStart = card.querySelector(".btn-start");
+    const btnStop  = card.querySelector(".btn-stop");
+
+    card.classList.toggle("running", running);
+    dot.classList.toggle("running", running);
+    label.classList.toggle("running", running);
+    label.textContent  = running ? "起動中 ●" : "停止中";
+    openBtn.classList.toggle("hidden", !running);
+    btnStart.disabled = running;
+    btnStop.disabled  = !running;
+  }
+
+  function applyConflictLock(runningKeys) {
+    const anyRunning = runningKeys.length > 0;
+    document.getElementById("conflict-notice").style.display =
+      anyRunning ? "block" : "none";
+
+    document.querySelectorAll(".card").forEach(card => {
+      const key = card.dataset.key;
+      const startBtn = card.querySelector(".btn-start");
+      if (anyRunning && !runningKeys.includes(key)) {
+        startBtn.disabled = true;
+      }
+    });
+  }
+
+  // --- API calls ---
+
+  async function apiFetch(url, method = "GET") {
+    const res = await fetch(url, { method });
+    return res.json();
+  }
+
+  async function refreshStatus() {
+    const status = await apiFetch("/api/status");
+    const running = [];
+    document.querySelectorAll(".card").forEach(card => {
+      const key = card.dataset.key;
+      const isRunning = status[key] === "running";
+      if (isRunning) running.push(key);
+      setCardState(key, isRunning);
+    });
+    applyConflictLock(running);
+
+    // Blink indicator
+    const ind = document.getElementById("poll-indicator");
+    ind.style.color = "#27ae60";
+    setTimeout(() => { ind.style.color = "#444"; }, 400);
+  }
+
+  async function startProject(key) {
+    const res = await apiFetch(`/api/start/${key}`, "POST");
+    if (!res.ok) {
+      alert(`起動失敗:\n\n${res.msg}`);
+      return;
+    }
+    setCardState(key, true);
+    applyConflictLock([key]);
+    // Re-check after startup delay
+    setTimeout(refreshStatus, 3000);
+  }
+
+  async function stopProject(key) {
+    await apiFetch(`/api/stop/${key}`, "POST");
+    setCardState(key, false);
+    applyConflictLock([]);
+    setTimeout(refreshStatus, 800);
+  }
+
+  // Poll every 5 seconds
+  refreshStatus();
+  setInterval(refreshStatus, 5000);
+</script>
+
+</body>
+</html>
