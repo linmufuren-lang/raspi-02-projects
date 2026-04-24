@@ -14,6 +14,7 @@ PROJECT_META = {
     "mp_face_mesh":       {"icon": "🕸️",  "name": "Face Mesh",         "desc": "顔メッシュランドマーク"},
     "mp_object_detector": {"icon": "🔍",  "name": "Object Detector",   "desc": "物体検出 (EfficientDet)"},
     "mp_Vulcan_salute":   {"icon": "🖖",  "name": "Vulcan Salute",     "desc": "バルカン敬礼ジェスチャー"},
+    "mp_face_stylizer":   {"icon": "🎨",  "name": "Face Stylizer",     "desc": "顔をアートに変換・5枚撮影"},
 }
 
 ENTRY_NAMES = ["app.py", "main.py", "stream.py"]
